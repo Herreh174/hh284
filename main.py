@@ -42,10 +42,35 @@ def set_chat(request, chat_id):
     if len(messages) == 0:
         messages.append(set_chat_system_message(chat_id))
     messages.append({"role": "user", "content": message_content})
-    response = get_chat_completion(messages)
+    response = get_chat_completion(messages, model="gpt-4-1106-preview")
     response_message, tokens = extract_reponse_to_message(response)
     save_chat_messages(chat_id, 
         [{"role": "user", "content": message_content},
+        response_message])
+    response_message["tokens"] = tokens
+    return jsonify(response_message)
+
+def set_img(request, chat_id):
+    if "content" not in request.json:
+        return {"error": "content not in request"}, 400
+    if "url" not in request.json:
+        return {"error": "content not in request"}, 400
+    text = request.json["content"]
+    url = request.json.get("url")
+    if url:
+        content = [
+            {"type": "text", "text": text},
+            {"type": "image_url", "image_url": {"url": url, "detail": "low"}}
+        ]
+    messages = get_chat_messages(chat_id, int(messages_length))
+    if len(messages) == 0:
+        messages.append(set_chat_system_message(chat_id))
+    messages.append({"role": "user", "content": content})
+    response = get_chat_completion(messages, model="gpt-4-vision-preview")
+    print(response)
+    response_message, tokens = extract_reponse_to_message(response)
+    save_chat_messages(chat_id, 
+        [{"role": "user", "content": content},
         response_message])
     response_message["tokens"] = tokens
     return jsonify(response_message)
@@ -102,6 +127,7 @@ url_map = Map([
     Rule('/<chat_id>/system', methods=['POST'], endpoint=set_system),
     Rule('/<chat_id>/chat', methods=['GET'], endpoint=get_chat),
     Rule('/<chat_id>/chat', methods=['POST'], endpoint=set_chat),
+    Rule('/<chat_id>/img', methods=['POST'], endpoint=set_img),
     Rule('/<chat_id>/clear', methods=['POST'], endpoint=clear_chat),
 ])
 
