@@ -1,8 +1,8 @@
 import os
 import openai
 
-max_tokens = os.environ.get('MAX_TOKENS', "500")
-messages_length = os.environ.get('MESSAGES_LENGTH', "20")
+max_tokens = os.environ.get('MAX_TOKENS', "128000")
+messages_length = os.environ.get('MESSAGES_LENGTH', "50")
 openai.api_key = os.environ.get('GPT_API_KEY')
 
 def get_moderation(input):
@@ -16,9 +16,11 @@ def get_chat_completion(
     top_p=1,
     frequency_penalty=0,
     presence_penalty=0.6,
+    model="gpt-3.5-turbo",
 ):
     response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo-0301",
+        #model="gpt-3.5-turbo",
+        model=model,
         max_tokens=max_tokens,
         messages=messages
     )
