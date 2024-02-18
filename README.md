@@ -59,18 +59,230 @@ To start using the proxy API, you can make POST requests to the following endpoi
 
 https://[YOUR_CLOUD_FUNCTION_URL]/<chat_id>/chat
 
-    Where `<chat_id>` is the ID of the chat session you want to retrieve. If the chat session doesn't exist, it will be created automatically.
+    Where `<chat_id>` is the ID of the chat session you want to retrieve. If the chat session doesn't exist, it will be created automatically, but the chat_id value is up to you.
 
-The body of the request should be a JSON object with the following structure:
-    
-```json
-{
-    "content": "Hello, how are you?"
-}
-```
-Where `content` is the message you want to send to the chatbot.
+## API Documentation
 
-A GET request to the same endpoint will return the chat history for the specified chat session.
+#### HealthCheck
+
+<details>
+ <summary><code>GET</code> <code><b>/</b></code> <code>(Check service availability)</code></summary>
+
+##### Parameters
+
+> None
+
+##### Responses
+
+> | http code     | content-type                      | response                                                            |
+> |---------------|-----------------------------------|---------------------------------------------------------------------|
+> | `200`         | `text/html`                | `Hello, World!`                             |
+
+##### Example cURL
+
+> ```bash
+>  curl -X GET http://localhost:8080/
+> ```
+
+</details>
+
+#### System prompt
+
+<details>
+ <summary><code>GET</code> <code><b>/system</b></code> <code>(Get current global system prompt)</code></summary>
+
+##### Parameters
+
+> None
+
+##### Responses
+
+> | http code     | content-type                      | response                                                            |
+> |---------------|-----------------------------------|---------------------------------------------------------------------|
+> | `200`         | `application/json`                | `{"content": "You are a python engineer..."}`                       |
+
+##### Example cURL
+
+> ```bash
+>  curl -X GET http://localhost:8080/system
+> ```
+
+</details>
+
+<details>
+ <summary><code>POST</code> <code><b>/system</b></code> <code>(Set the global system prompt, base for all chats system prompt)</code></summary>
+
+##### Body (JSON)
+
+> | name     | type     | data type  | description                                            |
+> |----------|----------|------------|--------------------------------------------------------|
+> | content  | required | string     | A message telling how ChatGPT should behave. Check [suggestions](https://github.com/mustvlad/ChatGPT-System-Prompts)
+
+
+##### Responses
+
+> | http code     | content-type                      | response                       |
+> |---------------|-----------------------------------|--------------------------------|
+> | `200`         | `application/json`                | `{}`                           |
+
+##### Example cURL
+
+> ```bash
+>  curl -X POST -H "Content-Type: application/json" --data @system.json http://localhost:8080/system
+> ```
+
+</details>
+
+#### Moderation check
+
+    OpenAI provides moderation checks to users messages, which can help detect unwanted behavior on a conversation.
+
+<details>
+ <summary><code>POST</code> <code><b>/mod</b></code> <code>(Send user's messages to this endpoint before calling /chat)</code></summary>
+
+##### Body (JSON)
+
+> | name     | type     | data type  | description                                            |
+> |----------|----------|------------|--------------------------------------------------------|
+> | content  | required | string     | The message to evaluate possible moderation flags
+
+
+##### Responses
+
+> | http code     | content-type                      | response                       |
+> |---------------|-----------------------------------|--------------------------------|
+> | `200`         | `application/json`                | `{"id": "string", "model": "string", "results": [{...}]}`                           |
+
+##### Example cURL
+
+> ```bash
+>  curl -X POST -H "Content-Type: application/json" --data @message.json http://localhost:8080/mod
+> ```
+
+</details>
+
+#### Chat system prompt
+
+<details>
+ <summary><code>POST</code> <code><b>/&lt;chat_id&gt;/system</b></code> <code>(Same as global system prompt but for individual chat)</code></summary>
+
+##### Example cURL
+
+> ```bash
+>  curl -X POST -H "Content-Type: application/json" --data @system.json http://localhost:8080/<chat_id>/system
+> ```
+
+</details>
+
+<details>
+ <summary><code>GET</code> <code><b>/&lt;chat_id&gt;/system</b></code> <code>(Same as global system prompt but for individual chat)</code></summary>
+
+##### Example cURL
+
+> ```bash
+>  curl -X GET http://localhost:8080/<chat_id>/system
+> ```
+
+</details>
+
+#### Chat conversation
+
+<details>
+ <summary><code>POST</code> <code><b>/&lt;chat_id&gt;/chat</b></code> <code>(Send a message to a chat)</code></summary>
+
+##### Body (JSON)
+
+> | name     | type     | data type  | description                                            |
+> |----------|----------|------------|--------------------------------------------------------|
+> | content  | required | string     | User message to send to ChatGPT and get the response
+
+
+##### Responses
+
+> | http code     | content-type                      | response                       |
+> |---------------|-----------------------------------|--------------------------------|
+> | `200`         | `application/json`                | `{"content": "string", "role": "string", "tokens": {"completion_tokens": number, "prompt_tokens": number, "total_tokens": number}}`                           |
+
+##### Example cURL
+
+> ```bash
+>  curl -X POST -H "Content-Type: application/json" --data @message.json http://localhost:8080/<chat_id>/chat
+> ```
+
+</details>
+
+
+<details>
+ <summary><code>GET</code> <code><b>/&lt;chat_id&gt;/chat</b></code> <code>(Get list of all messages in this chat)</code></summary>
+
+##### Parameters
+
+> None
+
+##### Responses
+
+> | http code     | content-type                      | response                       |
+> |---------------|-----------------------------------|--------------------------------|
+> | `200`         | `application/json`                | `[{"content": "string", "role": "string"}]`                           |
+
+##### Example cURL
+
+> ```bash
+>  curl -X GET http://localhost:8080/<chat_id>/chat
+> ```
+
+</details>
+
+#### Send images to a chat
+
+
+<details>
+ <summary><code>POST</code> <code><b>/&lt;chat_id&gt;/img</b></code> <code>(Send a image url to a chat and get the image description)</code></summary>
+
+##### Body (JSON)
+
+> | name     | type     | data type  | description                                            |
+> |----------|----------|------------|--------------------------------------------------------|
+> | content  | required | string     | A prompt about the image like: "What's on this image?"
+> | url      | required | string     | The url of the image
+
+
+##### Responses
+
+> | http code     | content-type                      | response                       |
+> |---------------|-----------------------------------|--------------------------------|
+> | `200`         | `application/json`                | `{"content": "string", "role": "string", "tokens": {"completion_tokens": number, "prompt_tokens": number, "total_tokens": number}}`                           |
+
+##### Example cURL
+
+> ```bash
+>  curl -X POST -H "Content-Type: application/json" --data @image.json http://localhost:8080/<chat_id>/img
+> ```
+
+</details>
+
+#### Clear a chat
+
+<details>
+ <summary><code>POST</code> <code><b>/&lt;chat_id&gt;/clear</b></code> <code>(Clear all messages from a chat)</code></summary>
+
+##### Body (JSON)
+
+> None
+
+##### Responses
+
+> | http code     | content-type                      | response                       |
+> |---------------|-----------------------------------|--------------------------------|
+> | `200`         | `application/json`                | `{}`                           |
+
+##### Example cURL
+
+> ```bash
+>  curl -X POST http://localhost:8080/<chat_id>/clear
+> ```
+
+</details>
 
 ## License
 
